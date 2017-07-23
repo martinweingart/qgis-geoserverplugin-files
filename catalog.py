@@ -173,6 +173,19 @@ class CatalogWrapper(object):
 
 
     def uploadIcons(self, icons):
+        for icon in icons:
+            url = self.catalog.gs_base_url + "rest/resource/styles/"+icon[1]
+            if isinstance(self.catalog, PKICatalog):
+                r = requests.put(url, data=icon[2], cert=(self.catalog.cert, self.catalog.key), verify=self.catalog.ca_cert)
+            else:
+                r = requests.put(url, data=icon[2], auth=(self.catalog.username, self.catalog.password))
+            try:
+                r.raise_for_status()
+            except Exception, e:
+                #In case the GeoServer instance is a Suite one with GeoServer 2.9 or earlier
+                self.uploadIconsSuite(icons)
+
+    def uploadIconsSuite(self, icons):
         url = self.catalog.gs_base_url + "app/api/icons"
         for icon in icons:
             files = {'file': (icon[1], icon[2])}
@@ -184,7 +197,6 @@ class CatalogWrapper(object):
                 r.raise_for_status()
             except Exception, e:
                 raise Exception ("Error uploading SVG icon to GeoServer:\n" + str(e))
-            break
 
 
     def getDataFromLayer(self, layer):
@@ -399,8 +411,8 @@ class CatalogWrapper(object):
         resource.dirty["abstract"] = description
         resource.dirty["title"] = inp_title
         resource.dirty["enabled"] = enabled
-        resource.dirty["srs"] = 'EPSG:4326'
-        resource.dirty["projectionPolicy"] = 'REPROJECT_TO_DECLARED'
+        # resource.dirty["srs"] = 'EPSG:4326'
+        # resource.dirty["projectionPolicy"] = 'REPROJECT_TO_DECLARED'
         self.catalog.save(resource)
 
     def getConnectionNameFromLayer(self, layer):
